@@ -1,56 +1,205 @@
 # 原油期货多模型集成投资策略
 
-基于机器学习的WTI原油期货（CL=F）量化交易系统，覆盖数据获取、特征工程、模型训练、回测与可视化全流程。
+基于机器学习的WTI原油期货（CL=F）量化交易系统，涵盖数据获取、特征工程、模型训练、回测与可视化全流程。
+
+## 项目结构
+
+```
+.
+├── config.py                      # 配置文件（参数统一管理）
+├── data_collector.py              # 数据收集模块
+├── feature_engineering.py         # 特征工程模块
+├── main.py                        # 主程序入口
+├── model_trainer.py               # 模型训练模块
+├── strategy_backtest.py           # 回测策略模块
+├── tune.py                        # 参数调优模块（Optuna）
+├── visualization.py               # 可视化与报告生成
+├── requirements.txt               # 依赖包列表
+├── README.md                      # 本文件
+│
+├── data/                          # 数据目录
+│   └── raw_data.csv              # 原始数据（自动下载）
+│
+├── models/                        # 训练模型存储
+│   ├── rf_model.joblib           # 随机森林模型
+│   ├── xgb_model.joblib          # XGBoost模型
+│   ├── bagging_model.joblib      # Bagging模型
+│   └── model_config.joblib       # 模型配置
+│
+└── output/                        # 输出结果目录
+    ├── best_params.json          # 调参最优结果
+    ├── model_comparison.png       # 模型对比
+    ├── feature_importance.png     # 特征重要性
+    ├── backtest_summary.png       # 回测摘要
+    ├── equity_curve.png           # 权益曲线
+    ├── returns_distribution.png   # 收益分布
+    ├── prediction_analysis.png    # 预测分析
+    └── price_signals.png          # 价格信号图
+```
 
 ## 运行环境
-- Python 3.9+，推荐创建虚拟环境
+
+- Python 3.9 或更高版本（推荐创建虚拟环境）
 - 安装依赖：`pip install -r requirements.txt`
-- 依赖亮点：scikit-learn、xgboost、backtesting、optuna、yfinance、matplotlib
+- 核心库：scikit-learn、xgboost、backtesting、optuna、yfinance、matplotlib、pandas
 
-## 快速上手
-- 运行完整管道（含回测与图表）：`python main.py`
-- 无图形环境可设 `show_plots=False`：在 [main.py](main.py#L166-L239) 的 `run_full_pipeline` 调用中传参
-- 快速小样本测试：在 [main.py](main.py#L241-L253) 调用 `pipeline.quick_test()`（时间范围缩短）
-- 分模块调试：
-	- 数据收集 [data_collector.py](data_collector.py)
-	- 特征工程 [feature_engineering.py](feature_engineering.py)
-	- 模型训练 [model_trainer.py](model_trainer.py)
-	- 回测 [strategy_backtest.py](strategy_backtest.py)
-	- 可视化 [visualization.py](visualization.py)
+## 快速开始
 
-## 工作流概览
-1) 数据：从 Yahoo Finance 获取 CL=F 及宏观因子（美债收益率、美元指数、标普500、VIX、USO、黄金），频率日线 [data_collector.py](data_collector.py#L23-L193)
-2) 特征：技术指标（SMA/EMA/RSI/MACD/布林/ATR）、滞后、动量、交互特征，并生成未来5日上涨标签 [feature_engineering.py](feature_engineering.py#L18-L199)
-3) 训练：时间序列切分（默认训练集70%），RandomForest + XGBoost + Bagging(LogReg) 软投票集成，交叉验证与测试评估 [model_trainer.py](model_trainer.py#L21-L214)
-4) 回测：使用 backtesting.py，支持多空/仅多头，含滑点、佣金、止盈止损 [strategy_backtest.py](strategy_backtest.py#L15-L210)
-5) 报告：输出模型对比、特征重要性、回测摘要、权益曲线、收益分布、预测分析、价格信号图 [visualization.py](visualization.py#L17-L326)
+### 完整执行
+```bash
+python main.py
+```
+运行完整管道（数据收集 → 特征工程 → 模型训练 → 回测 → 可视化）。
 
-## 配置要点（默认值见 [config.py](config.py)）
-- 数据：`symbol=CL=F`，时间范围 2016-01-01 至 2025-12-01，宏观因子 6 条，日频
-- 特征：滞后期 `lag_periods=60`，动量/波动窗口多档，特征选择 `n_features=70`，预测窗口 `prediction_horizon=5`
-- 模型：
-	- RF `n_estimators=200`，`max_depth=10`
-	- XGB `n_estimators=200`，`max_depth=8`，`learning_rate=0.05`
-	- Bagging(LogReg) `n_estimators=60`
-	- 集成权重：rf 0.30 / xgb 0.43 / bagging 0.27；时间序列 CV 5 折；训练集比例 0.7
-- 策略：买入阈值 0.58，卖出阈值 0.38，单笔仓位 45%，佣金/滑点各 0.1%，止损 4%，止盈 14%
-- 可视化：输出目录 `output/`，默认风格 seaborn whitegrid
+### 无图形环境
+如在服务器环境，设置 `show_plots=False`：
+```python
+pipeline.run_full_pipeline(show_plots=False)
+```
+
+### 快速测试
+快速验证流程（数据范围缩短）：
+```python
+pipeline.quick_test()
+```
+
+### 分模块调试
+| 模块 | 文件 | 功能 |
+|------|------|------|
+| 数据收集 | [data_collector.py](data_collector.py) | Yahoo Finance 数据下载 |
+| 特征工程 | [feature_engineering.py](feature_engineering.py) | 技术指标与衍生特征 |
+| 模型训练 | [model_trainer.py](model_trainer.py) | 集成模型与评估 |
+| 策略回测 | [strategy_backtest.py](strategy_backtest.py) | 回测与性能统计 |
+| 可视化报告 | [visualization.py](visualization.py) | 结果展示与分析 |
+
+## 技术方案
+
+### 数据层
+- **标的**：WTI原油期货（CL=F）
+- **时间范围**：2016-01-01 至 2025-12-01
+- **频率**：日线数据
+- **宏观因子**：美债收益率、美元指数、标普500、VIX、USO、黄金（6类）
+
+详见 [data_collector.py](data_collector.py#L23-L193)
+
+### 特征层
+- 技术指标：SMA、EMA、RSI、MACD、布林带、ATR
+- 滞后特征：60期历史价格
+- 动量特征：多窗口 (5, 10, 20, 60 日)
+- 交互特征：衍生变量
+- **目标**：预测未来5日上涨概率（二分类）
+- **特征选择**：自动筛选 70 个最重要特征
+
+详见 [feature_engineering.py](feature_engineering.py#L18-L199)
+
+### 模型层（三模型集成）
+| 模型 | 类型 | 配置 | 权重 |
+|------|------|------|------|
+| Random Forest | 并行集成 | n_estimators=200, max_depth=10 | 30% |
+| XGBoost | 梯度提升 | n_estimators=200, max_depth=8, lr=0.05 | 43% |
+| Bagging LogReg | 装袋集成 | n_estimators=60 | 27% |
+
+- 时间序列交叉验证：5折
+- 训练/测试分割：7/3
+- 集成方式：软投票
+
+详见 [model_trainer.py](model_trainer.py#L21-L214)
+
+### 策略层
+- **买入信号**：预测概率 ≥ 58%
+- **卖出信号**：预测概率 ≤ 38%
+- **单笔头寸**：账户资金 45%
+- **佣金**：0.1%
+- **滑点**：0.1%
+- **止损**：4%
+- **止盈**：14%
+- **持仓方向**：默认仅做多
+
+详见 [strategy_backtest.py](strategy_backtest.py#L15-L210)
+
+### 输出层
+生成 7 类分析图表：
+- 模型性能对比
+- 特征重要性排序
+- 回测性能摘要
+- 权益曲线走势
+- 收益分布统计
+- 预测准确性分析
+- 价格与交易信号
+
+详见 [visualization.py](visualization.py#L17-L326)
+
+## 配置说明
+
+详见 [config.py](config.py)，主要参数如下：
 
 ## 输出物
-- 数据：data/raw_data.csv
-- 模型：models/rf_model.joblib、models/xgb_model.joblib、models/bagging_model.joblib、models/model_config.joblib
-- 图表（输出目录）：model_comparison.png、feature_importance.png、backtest_summary.png、equity_curve.png、returns_distribution.png、prediction_analysis.png、price_signals.png
-- 调参结果：output/best_params.json（Optuna 运行后生成）
 
-## 调参指南
-- 运行：`python tune.py --trials 50 --study-name cl_ml_tune`
-- 搜索空间涵盖：RF/XGB/Bagging 参数、集成权重、特征选择数、交易阈值/仓位/止盈止损
-- 评分：以 Sharpe 为主，兼顾最大回撤和年化收益，最优结果自动写入 output/best_params.json
+| 文件 | 位置 | 说明 |
+|------|------|------|
+| 原始数据 | `data/raw_data.csv` | 下载的原油期货与宏观因子数据 |
+| 随机森林模型 | `models/rf_model.joblib` | Random Forest 训练模型 |
+| XGBoost 模型 | `models/xgb_model.joblib` | XGBoost 训练模型 |
+| Bagging 模型 | `models/bagging_model.joblib` | Bagging(LogReg) 训练模型 |
+| 模型配置 | `models/model_config.joblib` | 特征处理器与配置 |
+| 模型对比 | `output/model_comparison.png` | 三模型性能对比 |
+| 特征重要性 | `output/feature_importance.png` | 特征贡献度分析 |
+| 回测摘要 | `output/backtest_summary.png` | 关键回测指标 |
+| 权益曲线 | `output/equity_curve.png` | 账户资产变化曲线 |
+| 收益分布 | `output/returns_distribution.png` | 收益率直方图 |
+| 预测分析 | `output/prediction_analysis.png` | 预测准确率分析 |
+| 交易信号 | `output/price_signals.png` | 价格与买卖信号图 |
+| 调参结果 | `output/best_params.json` | Optuna 最优参数 |
+
+## 调参优化
+
+参数优化采用 Optuna 框架，支持全局搜索和贝叶斯优化。
+
+### 运行调参
+```bash
+python tune.py --trials 50 --study-name cl_ml_tune
+```
+
+### 搜索空间
+
+优化的关键参数：
+- **模型参数**：Random Forest、XGBoost、Bagging 的树深度、学习率等
+- **集成权重**：三个模型的投票权重
+- **特征数量**：选择前 K 个重要特征
+- **策略参数**：买入/卖出阈值、持仓比例、止盈止损水平
+
+### 评估指标
+- 主指标：Sharpe 比率
+- 辅助指标：年化收益率、最大回撤
+
+最优参数自动保存至 `output/best_params.json`。
 
 ## 注意事项
-- yfinance 在部分地区需代理；如下载为空会自动重试 download 接口
-- 特征选择与标准化仅在训练集拟合，测试/回测阶段保持特征对齐并填充缺失
-- 目标使用 `close.shift(-horizon)` 生成，请避免前瞻偏差；尾部 NaN 行已丢弃
-- 回测默认仅做多版本可切换 `long_only=True`，如需多空可使用 `MLStrategy`
 
-本项目仅供学习研究使用。
+1. **网络连接**：部分地区访问 Yahoo Finance 需要代理。如数据下载为空，系统会自动重试。
+   
+2. **数据处理**：
+   - 特征选择与标准化仅在训练集进行
+   - 测试集和回测阶段保持特征对齐，缺失值自动填充
+   - 目标标签由 `close.shift(-horizon)` 生成，已规避前瞻偏差
+   - 末尾 NaN 行已自动丢弃
+
+3. **模型使用**：
+   - 默认为仅做多策略（`long_only=True`）
+   - 若需双向交易，修改 [strategy_backtest.py](strategy_backtest.py) 中 `MLStrategy` 配置
+
+4. **依赖问题**：
+   - Windows 用户如遇 joblib 保存问题，可改用 pickle
+   - macOS M1/M2 用户运行 XGBoost 可能需要指定平台
+
+## 项目主要算法亮点
+
+✓ **时间序列交叉验证** - 避免数据泄露，真实评估模型性能  
+✓ **三模型软投票集成** - 结合 RF 的稳定性、XGB 的拟合力、Bagging 的鲁棒性  
+✓ **特征交互与衍生** - 融合宏观因子与技术指标  
+✓ **动态阈值策略** - 不同市场环境自适应交易信号  
+✓ **完整回测框架** - 模拟真实交易成本（佣金、滑点、止盈止损）
+
+## 免责声明
+
+本项目仅供学习研究使用，**不构成任何投资建议**。使用者需自行承担由此产生的一切后果。量化交易存在风险，请谨慎参与。
