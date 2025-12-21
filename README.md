@@ -185,8 +185,9 @@ python tune.py --trials 50 --study-name cl_ml_tune
    - 末尾 NaN 行已自动丢弃
 
 3. **模型使用**：
-   - 默认为仅做多策略（`long_only=True`）
-   - 若需双向交易，修改 [strategy_backtest.py](strategy_backtest.py) 中 `MLStrategy` 配置
+   - 支持多空双向交易，`STRATEGY_CONFIG['long_only']` 控制是否禁用卖空（默认允许卖空）
+   - 若需仅做多，将配置设为 `True`
+   - 默认自动读取 `output/best_params.json` 覆盖模型与策略配置（可在 `config.py` 中将 `USE_BEST_PARAMS=False` 或通过 `BEST_PARAMS_PATH` 环境变量自定义路径）
 
 4. **依赖问题**：
    - Windows 用户如遇 joblib 保存问题，可改用 pickle

@@ -13,13 +13,13 @@ Optuna 调参脚本
 - 将 best_params.json 写入 output/best_params.json
 
 说明:
-- 采用时间序列切分: 前 80% 作为训练, 后 20% 作为验证/回测段
+- 采用时间序列切分: 前 70% 作为训练, 后 30% 作为验证/回测段
 - 在验证段上跑一次 backtesting 回测，返回评分
 - 评分函数: score = sharpe - 0.1 * max_drawdown/100 + 0.001 * annual_return/100
   若 Sharpe 缺失则用总收益率/100 代替
 
 注意:
-- 回测使用 LongOnlyMLStrategy，避免做空复杂度
+- 回测是否允许做空由 STRATEGY_CONFIG 中的 long_only 控制
 - 为加快调参，采用较小搜索空间，可在下方自行扩展
 - 若需要更快，可减少 trials 或收窄参数范围
 """
@@ -166,7 +166,7 @@ def objective(trial: optuna.Trial) -> float:
     # 特征工程
     fm = FeatureMatrix(feat_cfg)
     X_train, X_test, y_train, y_test = fm.fit_transform_pipeline(
-        data, train_size=model_cfg.get("train_size", 0.8)
+        data, train_size=model_cfg.get("train_size", 0.7)
     )
 
     # 模型训练
@@ -181,7 +181,7 @@ def objective(trial: optuna.Trial) -> float:
 
     # 回测
     engine = BacktestEngine(strat_cfg)
-    stats = engine.run_backtest(test_df, forecast, long_only=True)
+    stats = engine.run_backtest(test_df, forecast, long_only=strat_cfg.get("long_only", True))
 
     score = scoring(stats)
 

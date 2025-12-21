@@ -1,7 +1,13 @@
 """
-配置模块 - 集中管理所有参数
+配置模块 - 集中管理所有参数，并支持加载最优参数覆盖
 原油期货多模型集成投资策略
 """
+
+import json
+import logging
+import os
+
+logger = logging.getLogger(__name__)
 
 # 数据配置
 DATA_CONFIG = {
@@ -100,6 +106,9 @@ MODEL_CONFIG = {
 
 # 交易策略配置
 STRATEGY_CONFIG = {
+    # 是否仅做多（False 时启用卖空）
+    'long_only': False,
+    
     # 信号阈值
     'threshold_buy': 0.58,   # 买入阈值
     'threshold_sell': 0.38,  # 卖出阈值
@@ -131,3 +140,79 @@ LOG_CONFIG = {
     'level': 'INFO',
     'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 }
+
+# 是否优先加载 output/best_params.json 覆盖默认配置
+USE_BEST_PARAMS = True
+BEST_PARAMS_PATH = os.environ.get("BEST_PARAMS_PATH", "output/best_params.json")
+
+
+def _load_best_params(path: str = BEST_PARAMS_PATH):
+    """从文件读取最优参数"""
+    if not USE_BEST_PARAMS:
+        return None
+    
+    if not os.path.exists(path):
+        logger.info(f"未找到最佳参数文件: {path}，将使用默认配置")
+        return None
+    
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            payload = json.load(f)
+        return payload.get('params')
+    except Exception as e:
+        logger.warning(f"加载最佳参数失败，将使用默认配置。错误: {e}")
+        return None
+
+
+def apply_best_params():
+    """
+    将最佳参数覆盖到当前配置（原地修改全局 CONFIG）
+    """
+    params = _load_best_params()
+    if not params:
+        return
+    
+    # 特征选择
+    FEATURE_CONFIG['n_features'] = params.get('n_features', FEATURE_CONFIG['n_features'])
+    
+    # 模型参数
+    MODEL_CONFIG['rf'] = MODEL_CONFIG['rf'].copy()
+    MODEL_CONFIG['rf'].update({
+        'n_estimators': params.get('rf_n_estimators', MODEL_CONFIG['rf']['n_estimators']),
+        'max_depth': params.get('rf_max_depth', MODEL_CONFIG['rf']['max_depth']),
+        'min_samples_leaf': params.get('rf_min_samples_leaf', MODEL_CONFIG['rf']['min_samples_leaf']),
+    })
+    
+    MODEL_CONFIG['xgb'] = MODEL_CONFIG['xgb'].copy()
+    MODEL_CONFIG['xgb'].update({
+        'n_estimators': params.get('xgb_n_estimators', MODEL_CONFIG['xgb']['n_estimators']),
+        'max_depth': params.get('xgb_max_depth', MODEL_CONFIG['xgb']['max_depth']),
+        'learning_rate': params.get('xgb_learning_rate', MODEL_CONFIG['xgb']['learning_rate']),
+        'subsample': params.get('xgb_subsample', MODEL_CONFIG['xgb']['subsample']),
+        'colsample_bytree': params.get('xgb_colsample', MODEL_CONFIG['xgb']['colsample_bytree']),
+        'reg_lambda': params.get('xgb_reg_lambda', MODEL_CONFIG['xgb']['reg_lambda']),
+        'reg_alpha': params.get('xgb_reg_alpha', MODEL_CONFIG['xgb']['reg_alpha']),
+    })
+    
+    MODEL_CONFIG['bagging'] = MODEL_CONFIG['bagging'].copy()
+    MODEL_CONFIG['bagging'].update({
+        'n_estimators': params.get('bag_n_estimators', MODEL_CONFIG['bagging']['n_estimators']),
+    })
+    
+    if 'weights' in params:
+        MODEL_CONFIG['ensemble_weights'] = params['weights']
+    
+    # 策略参数
+    STRATEGY_CONFIG.update({
+        'threshold_buy': params.get('threshold_buy', STRATEGY_CONFIG['threshold_buy']),
+        'threshold_sell': params.get('threshold_sell', STRATEGY_CONFIG['threshold_sell']),
+        'position_size': params.get('position_size', STRATEGY_CONFIG['position_size']),
+        'stop_loss': params.get('stop_loss', STRATEGY_CONFIG['stop_loss']),
+        'take_profit': params.get('take_profit', STRATEGY_CONFIG['take_profit']),
+    })
+    
+    logger.info(f"已加载最佳参数并覆盖默认配置，来源: {BEST_PARAMS_PATH}")
+
+
+# 在模块导入时应用（若文件存在）
+apply_best_params()

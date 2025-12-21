@@ -52,8 +52,9 @@ class MLStrategy(Strategy):
         # 如果有持仓，检查止盈止损
         if self.position:
             if self.entry_price is not None:
-                # 计算当前收益率
-                pnl_pct = (current_price - self.entry_price) / self.entry_price
+                # 方向调整后的收益率，多头盈利为正，空头下跌为正
+                pnl_raw = (current_price - self.entry_price) / self.entry_price
+                pnl_pct = pnl_raw if self.position.is_long else -pnl_raw
                 
                 if self.position.is_long:
                     # 多头止损止盈
@@ -73,11 +74,11 @@ class MLStrategy(Strategy):
                         
                 elif self.position.is_short:
                     # 空头止损止盈
-                    if pnl_pct >= self.stop_loss:
+                    if pnl_pct <= -self.stop_loss:
                         self.position.close()
                         self.entry_price = None
                         return
-                    elif pnl_pct <= -self.take_profit:
+                    elif pnl_pct >= self.take_profit:
                         self.position.close()
                         self.entry_price = None
                         return
@@ -197,7 +198,7 @@ class BacktestEngine:
     def run_backtest(self, df: pd.DataFrame, 
                      forecast: pd.Series,
                      strategy_class: Strategy = None,
-                     long_only: bool = False) -> Dict:
+                     long_only: Optional[bool] = None) -> Dict:
         """
         运行回测
         
@@ -217,6 +218,8 @@ class BacktestEngine:
         logger.info(f"回测时间范围: {bt_data.index[0]} 至 {bt_data.index[-1]}")
         
         # 选择策略
+        if long_only is None:
+            long_only = self.config.get('long_only', True)
         if strategy_class is None:
             strategy_class = LongOnlyMLStrategy if long_only else MLStrategy
         
@@ -304,9 +307,11 @@ class BacktestEngine:
         """
         bt_data = self.prepare_backtest_data(df, forecast)
         
+        strategy_cls = LongOnlyMLStrategy if self.config.get('long_only', True) else MLStrategy
+        
         self.backtest = Backtest(
             bt_data,
-            MLStrategy,
+            strategy_cls,
             cash=self.config.get('initial_capital', 100000),
             commission=self.config.get('commission', 0.001),
             exclusive_orders=True

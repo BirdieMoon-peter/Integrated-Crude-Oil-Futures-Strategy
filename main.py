@@ -183,7 +183,7 @@ class TradingPipeline:
         
         return self.test_results
     
-    def step4_backtest(self, long_only: bool = True) -> dict:
+    def step4_backtest(self, long_only: bool = None) -> dict:
         """
         步骤4: 策略回测
         
@@ -201,6 +201,9 @@ class TradingPipeline:
             self.step3_model_training()
         
         self.backtest_engine = BacktestEngine(self.strategy_config)
+
+        backtest_long_only = long_only if long_only is not None else self.strategy_config.get('long_only', True)
+        logger.info(f"回测模式: {'仅做多' if backtest_long_only else '可做多/做空'}")
         
         # 获取测试集数据
         test_df = self.feature_matrix.featured_data.loc[self.feature_matrix.test_index]
@@ -214,7 +217,7 @@ class TradingPipeline:
         self.backtest_stats = self.backtest_engine.run_backtest(
             test_df, 
             forecast,
-            long_only=long_only
+            long_only=backtest_long_only
         )
         
         # 打印回测摘要
@@ -302,7 +305,7 @@ class TradingPipeline:
             self.step3_model_training()
             
             # 步骤4: 回测
-            self.step4_backtest(long_only=True)
+            self.step4_backtest(long_only=self.strategy_config.get('long_only', True))
             
             # 步骤5: 可视化
             self.step5_visualization(show_plots=show_plots)
