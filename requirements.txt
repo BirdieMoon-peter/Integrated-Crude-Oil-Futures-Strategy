@@ -16,12 +16,16 @@ backtesting>=0.3.3
 
 # 可视化
 matplotlib>=3.5.0
+plotly>=5.15.0
 
 # 模型持久化
 joblib>=1.1.0
 
 # 调参
 optuna>=3.0.0
+
+# 交互式Web应用
+streamlit>=1.25.0
 
 # 可选依赖（如果需要更多技术指标）
 # ta-lib  # 需要单独安装系统库

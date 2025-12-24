@@ -177,6 +177,10 @@ class TradingPipeline:
         # 保存模型
         self.model_trainer.save_models('models')
         
+        # 保存特征工程参数（供模拟盘使用）
+        from predictor import save_feature_params
+        save_feature_params(self.feature_matrix.engineer, 'models')
+        
         # 打印结果摘要
         logger.info("\n模型性能汇总:")
         print(self.model_trainer.get_results_summary())
