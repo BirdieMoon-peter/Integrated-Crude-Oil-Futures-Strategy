@@ -27,6 +27,10 @@ optuna>=3.0.0
 # 交互式Web应用
 streamlit>=1.25.0
 
+# LLM Agent 优化器依赖
+openai>=1.0.0          # OpenAI API 客户端
+anthropic>=0.18.0      # Anthropic API 客户端（可选）
+
 # 可选依赖（如果需要更多技术指标）
 # ta-lib  # 需要单独安装系统库
 # ta>=0.10.0  # 纯Python实现的技术分析库

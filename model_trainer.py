@@ -13,7 +13,10 @@ from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
     classification_report, confusion_matrix, roc_auc_score
 )
-import xgboost as xgb
+try:
+    import xgboost as xgb  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    xgb = None
 import logging
 import warnings
 import joblib
@@ -51,17 +54,31 @@ class ModelTrainer:
         self.models['rf'] = RandomForestClassifier(
             n_estimators=rf_config.get('n_estimators', 100),
             max_depth=rf_config.get('max_depth', 10),
+            min_samples_leaf=rf_config.get('min_samples_leaf', 1),
+            min_samples_split=rf_config.get('min_samples_split', 2),
+            max_features=rf_config.get('max_features', 'sqrt'),
+            bootstrap=rf_config.get('bootstrap', True),
+            class_weight=rf_config.get('class_weight', None),
             random_state=rf_config.get('random_state', 42),
             n_jobs=rf_config.get('n_jobs', -1)
         )
         
         # XGBoost
+        if xgb is None:
+            raise ModuleNotFoundError("缺少依赖 xgboost：请先运行 `pip install xgboost` 或 `pip install -r requirements.txt`")
         xgb_config = self.config.get('xgb', {})
         self.models['xgb'] = xgb.XGBClassifier(
             n_estimators=xgb_config.get('n_estimators', 100),
             max_depth=xgb_config.get('max_depth', 6),
             learning_rate=xgb_config.get('learning_rate', 0.1),
             eval_metric=xgb_config.get('eval_metric', 'logloss'),
+            subsample=xgb_config.get('subsample', 1.0),
+            colsample_bytree=xgb_config.get('colsample_bytree', 1.0),
+            reg_lambda=xgb_config.get('reg_lambda', 1.0),
+            reg_alpha=xgb_config.get('reg_alpha', 0.0),
+            min_child_weight=xgb_config.get('min_child_weight', 1.0),
+            gamma=xgb_config.get('gamma', 0.0),
+            n_jobs=xgb_config.get('n_jobs', -1),
             random_state=xgb_config.get('random_state', 42),
             use_label_encoder=xgb_config.get('use_label_encoder', False)
         )
@@ -72,6 +89,10 @@ class ModelTrainer:
         self.models['bagging'] = BaggingClassifier(
             estimator=base_estimator,
             n_estimators=bagging_config.get('n_estimators', 50),
+            max_samples=bagging_config.get('max_samples', 1.0),
+            max_features=bagging_config.get('max_features', 1.0),
+            bootstrap=bagging_config.get('bootstrap', True),
+            bootstrap_features=bagging_config.get('bootstrap_features', False),
             random_state=bagging_config.get('random_state', 42),
             n_jobs=bagging_config.get('n_jobs', -1)
         )

@@ -227,6 +227,13 @@ class TradingPipeline:
         # 打印回测摘要
         self.backtest_engine.print_summary()
         
+        # 导出当前配置供 Agent 使用
+        try:
+            from config import export_current_config
+            export_current_config('output/current_config.json')
+        except Exception as e:
+            logger.warning(f"导出配置失败: {e}")
+        
         return self.backtest_stats
     
     def step5_visualization(self, show_plots: bool = True):

@@ -1,0 +1,16 @@
+{
+  "total_return": 57.2579442366715,
+  "annual_return": 17.06692686839837,
+  "sharpe_ratio": 1.1236973485026904,
+  "sortino_ratio": 2.0723456868587142,
+  "max_drawdown": -10.538392459384704,
+  "win_rate": 57.89473684210527,
+  "trades_count": 76,
+  "profit_factor": 1.8803573785167478,
+  "avg_trade": 1.2489904837065469,
+  "best_trade": 13.632204582025997,
+  "worst_trade": -11.090210446622981,
+  "buy_hold_return": -24.6442372553906,
+  "final_equity": 157257.9442366715,
+  "exposure_time": 91.85082872928176
+}

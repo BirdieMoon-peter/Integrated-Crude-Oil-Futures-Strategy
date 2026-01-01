@@ -1,0 +1,41 @@
+{
+  "timestamp": "2025-12-27T18:51:40.500951",
+  "source": "第 2 轮优化改进",
+  "score": 0.9417971654660847,
+  "stats": {
+    "total_return": 13.096724901382448,
+    "annual_return": 4.37067512253051,
+    "sharpe_ratio": 0.9417971654660847,
+    "sortino_ratio": 1.414979161972807,
+    "max_drawdown": -4.940985086309835,
+    "win_rate": 71.42857142857143,
+    "trades_count": 7,
+    "profit_factor": 6.052963632609857,
+    "avg_trade": 11.186483554014636,
+    "best_trade": 31.170575366493214,
+    "worst_trade": -9.694018275794305,
+    "buy_hold_return": -23.731324338199585,
+    "final_equity": 113096.72490138245,
+    "exposure_time": 81.79310344827586
+  },
+  "params": {
+    "threshold_buy": 0.75,
+    "threshold_sell": 0.25,
+    "stop_loss": 0.065,
+    "take_profit": 0.3,
+    "position_size": 0.15,
+    "n_features": 25,
+    "lag_periods": 15,
+    "prediction_window": 5,
+    "rf_n_estimators": 200,
+    "rf_max_depth": 10,
+    "xgb_n_estimators": 280,
+    "xgb_max_depth": 9,
+    "xgb_learning_rate": 0.06,
+    "ensemble_weights": {
+      "RF": 0.28,
+      "XGB": 0.47,
+      "Bagging": 0.25
+    }
+  }
+}

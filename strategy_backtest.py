@@ -248,6 +248,9 @@ class BacktestEngine:
         # 提取统计信息
         self.stats = self._extract_stats()
         
+        # 导出性能指标供 Agent 使用
+        self._save_metrics_json()
+        
         return self.stats
     
     def _extract_stats(self) -> Dict:
@@ -404,9 +407,49 @@ class BacktestEngine:
             if np.issubdtype(trades_to_dump[col].dtype, np.datetime64):
                 trades_to_dump[col] = trades_to_dump[col].dt.strftime('%Y-%m-%d %H:%M:%S')
         
+        # 添加盈亏标记便于 LLM 分析
+        trades_to_dump['IsProfit'] = trades_to_dump['PnL'] > 0
+        trades_to_dump['TradeType'] = trades_to_dump['Size'].apply(
+            lambda x: 'LONG' if x > 0 else 'SHORT'
+        )
+        
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-        trades_to_dump.to_json(path, orient='records', force_ascii=False)
+        trades_to_dump.to_json(path, orient='records', force_ascii=False, indent=2)
         logger.info(f"交易记录已写入 {path}")
+    
+    def _save_metrics_json(self):
+        """导出性能指标为 JSON 供 Agent 优化器使用"""
+        if self.stats is None:
+            return
+        
+        metrics_path = os.path.join(
+            os.path.dirname(self.config.get('trades_log_path', 'output/trades.json')),
+            'metrics.json'
+        )
+        
+        # 提取关键指标
+        metrics = {
+            'total_return': self.stats.get('total_return', 0),
+            'annual_return': self.stats.get('annual_return', 0),
+            'sharpe_ratio': self.stats.get('sharpe_ratio', 0),
+            'sortino_ratio': self.stats.get('sortino_ratio', 0),
+            'max_drawdown': self.stats.get('max_drawdown', 0),
+            'win_rate': self.stats.get('win_rate', 0),
+            'trades_count': self.stats.get('total_trades', 0),
+            'profit_factor': self.stats.get('profit_factor', 0),
+            'avg_trade': self.stats.get('avg_trade', 0),
+            'best_trade': self.stats.get('best_trade', 0),
+            'worst_trade': self.stats.get('worst_trade', 0),
+            'buy_hold_return': self.stats.get('buy_hold_return', 0),
+            'final_equity': self.stats.get('final_equity', 0),
+            'exposure_time': self.stats.get('exposure_time', 0),
+        }
+        
+        os.makedirs(os.path.dirname(metrics_path) or ".", exist_ok=True)
+        with open(metrics_path, 'w', encoding='utf-8') as f:
+            import json
+            json.dump(metrics, f, indent=2, ensure_ascii=False)
+        logger.info(f"性能指标已写入 {metrics_path}")
     
     def print_summary(self):
         """打印回测摘要"""

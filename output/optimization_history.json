@@ -1,0 +1,313 @@
+[
+  {
+    "round_id": 1,
+    "timestamp": "2025-12-27T18:51:18.226127",
+    "metrics": {
+      "total_return": 11.500373442890153,
+      "annual_return": 3.861668328190615,
+      "sharpe_ratio": 0.7655011645739956,
+      "sortino_ratio": 1.1100840678508974,
+      "max_drawdown": -4.675324048767415,
+      "win_rate": 44.44444444444444,
+      "trades_count": 9,
+      "profit_factor": 3.00919337836312,
+      "avg_trade": 5.742273219108807,
+      "best_trade": 26.237055734087555,
+      "worst_trade": -7.965648107617261,
+      "buy_hold_return": -24.6442372553906,
+      "final_equity": 111500.37344289015,
+      "exposure_time": 62.98342541436463
+    },
+    "params": {
+      "threshold_buy": 0.75,
+      "threshold_sell": 0.25,
+      "stop_loss": 0.065,
+      "take_profit": 0.3,
+      "position_size": 0.15,
+      "n_features": 25,
+      "lag_periods": 15,
+      "prediction_window": 5,
+      "rf_n_estimators": 200,
+      "rf_max_depth": 10,
+      "xgb_n_estimators": 280,
+      "xgb_max_depth": 9,
+      "xgb_learning_rate": 0.06,
+      "ensemble_weights": {
+        "RF": 0.28,
+        "XGB": 0.47,
+        "Bagging": 0.25
+      }
+    },
+    "improvement": 0.7655011645739956,
+    "reasoning": "当前买入阈值0.75已较高，但亏损交易中出现0.80以上的强信号失败案例，说明需进一步提升准入标准至0.82，牺牲交易次数换取信号纯度。卖出阈值从0.25微调至0.23，避免过早平仓错失趋势延续机会。原止损4.5%在原油波动中易被击穿，尤其在地缘政治扰动下，扩大至6.5%可过滤噪音；止盈从25%提升至32%，匹配盈利交易中多数超过20%的表现，让利润奔跑。仓位从18%降至15%，控制单笔风险暴露。特征数从20增至25，引入更多波动率、期限结构和情绪因子，滞后阶数从20减至15，增强近期动态响应。预测窗口维持5日符合短线趋势跟踪需求。XGBoost学习率微升至0.06，n_estimators增至280以加强非线性拟合，RF保持稳定，Bagging权重略降，因Bagging在突变行情中滞后明显。"
+  },
+  {
+    "round_id": 2,
+    "timestamp": "2025-12-27T18:52:06.536798",
+    "metrics": {
+      "total_return": 13.096724901382448,
+      "annual_return": 4.37067512253051,
+      "sharpe_ratio": 0.9417971654660847,
+      "sortino_ratio": 1.414979161972807,
+      "max_drawdown": -4.940985086309835,
+      "win_rate": 71.42857142857143,
+      "trades_count": 7,
+      "profit_factor": 6.052963632609857,
+      "avg_trade": 11.186483554014636,
+      "best_trade": 31.170575366493214,
+      "worst_trade": -9.694018275794305,
+      "buy_hold_return": -23.731324338199585,
+      "final_equity": 113096.72490138245,
+      "exposure_time": 81.79310344827586
+    },
+    "params": {
+      "threshold_buy": 0.7,
+      "threshold_sell": 0.27,
+      "stop_loss": 0.05,
+      "take_profit": 0.25,
+      "position_size": 0.18,
+      "n_features": 25,
+      "lag_periods": 10,
+      "prediction_window": 5,
+      "rf_n_estimators": 200,
+      "rf_max_depth": 10,
+      "xgb_n_estimators": 280,
+      "xgb_max_depth": 9,
+      "xgb_learning_rate": 0.06,
+      "ensemble_weights_rf": 0.3,
+      "ensemble_weights_xgb": 0.43,
+      "ensemble_weights_bagging": 0.27
+    },
+    "improvement": 0.17629600089208908,
+    "reasoning": "当前买入阈值0.75偏高，导致入场点多位于趋势中期甚至末期，增加被套风险；而卖出阈值0.25对于空头开仓已有效，可维持微调。历史数据显示亏损交易持仓过久是主要问题，因此应通过更积极的止损（从6.5%降至5%）来限制下行空间。同时，虽然现有止盈为30%看似合理，但部分盈利交易在达到前已有回落，建议略下调至25%以提高兑现概率。仓位比例15%适中，但配合更低止损可适度提升至18%以增强资本利用效率。特征滞后期15可能过长，延迟对最新价格信息的反应，缩短至10有助于提升信号时效性。预测窗口保持5不变，因当前模型对未来5期预测具备一定领先性。"
+  },
+  {
+    "round_id": 3,
+    "timestamp": "2025-12-27T18:52:52.510329",
+    "metrics": {
+      "total_return": 15.758359051937093,
+      "annual_return": 5.217971401769961,
+      "sharpe_ratio": 0.9070516614771676,
+      "sortino_ratio": 1.4148230713532748,
+      "max_drawdown": -4.095616052500029,
+      "win_rate": 53.84615384615385,
+      "trades_count": 13,
+      "profit_factor": 3.3379729204641144,
+      "avg_trade": 5.836635972221194,
+      "best_trade": 27.946089948347346,
+      "worst_trade": -7.965648107617261,
+      "buy_hold_return": -23.731324338199585,
+      "final_equity": 115758.35905193709,
+      "exposure_time": 90.48275862068965
+    },
+    "params": {
+      "threshold_buy": 0.75,
+      "threshold_sell": 0.25,
+      "stop_loss": 0.035,
+      "take_profit": 0.18,
+      "position_size": 0.15,
+      "n_features": 20,
+      "prediction_window": 7,
+      "lag_periods": 12,
+      "model_weights": {
+        "RF": 0.25,
+        "XGB": 0.5,
+        "Bagging": 0.25
+      }
+    },
+    "improvement": -0.03474550398891707,
+    "reasoning": "从亏损交易看，多数失败源于信号强度不足或市场环境恶化时仍坚持持仓。例如第4笔交易入场信号仅0.4161，远低于买入阈值0.7，可能是因模型输出波动导致误触发；而第1、5笔长期持仓亏损表明当前止盈（0.25）设置过高，在趋势逆转时无法及时退出。将买入阈值提高至0.75可过滤弱信号交易。止损从0.05收紧至0.035可在早期识别错误方向并退出。止盈从0.25下调至0.18有助于在趋势中途锁定利润，尤其针对中短期波动行情。仓位从0.18降至0.15可提升组合稳健性，配合更高频率的小幅盈利积累更利于提升夏普比率。特征数量由25减至20，聚焦核心变量减少过拟合风险。预测窗口从5延长至7，滞后阶数从10增至12，增强对趋势持续性的捕捉。模型方面，XGBoost表现稳定，应提升其权重至0.50，RF略降为0.25，Bagging保持0.25以维持多样性。"
+  },
+  {
+    "round_id": 4,
+    "timestamp": "2025-12-27T18:53:38.596033",
+    "metrics": {
+      "total_return": 19.88722537618257,
+      "annual_return": 6.5075455876331345,
+      "sharpe_ratio": 1.66434848709826,
+      "sortino_ratio": 2.7552228123024545,
+      "max_drawdown": -2.810472139212994,
+      "win_rate": 63.63636363636363,
+      "trades_count": 11,
+      "profit_factor": 7.102677490997636,
+      "avg_trade": 10.302101815713272,
+      "best_trade": 25.373355165287375,
+      "worst_trade": -7.060025638931846,
+      "buy_hold_return": -23.731324338199585,
+      "final_equity": 119887.22537618257,
+      "exposure_time": 59.17241379310345
+    },
+    "params": {
+      "threshold_buy": 0.75,
+      "threshold_sell": 0.25,
+      "stop_loss": 0.03,
+      "take_profit": 0.22,
+      "position_size": 0.12,
+      "n_features": 25,
+      "prediction_window": 5,
+      "lag_periods": 12,
+      "rf_n_estimators": 200,
+      "rf_max_depth": 10,
+      "xgb_n_estimators": 200,
+      "xgb_max_depth": 8,
+      "xgb_learning_rate": 0.05,
+      "ensemble_weights_rf": 0.3,
+      "ensemble_weights_xgb": 0.43,
+      "ensemble_weights_bagging": 0.27
+    },
+    "improvement": 0.7225513216321754,
+    "reasoning": "亏损交易多发生在信号强度偏弱时，说明当前0.75买入阈值可能偏低，易捕获噪声交易。将买入阈值提升至0.78可筛选更强看涨信号。卖出阈值从0.25微调至0.23，增强空头信号确认。原止损0.035在极端行情中易被击穿，参考ATR动态止损更优，但暂维持固定比例并下调至0.03以减少单笔损失。止盈从0.18上调至0.22，匹配高盈亏比优势，让利润奔跑。仓位由15%降至12%，提升系统整体抗风险能力。特征数由20增至25，引入波动率、情绪、宏观因子等增强模型鲁棒性。预测窗口保持5，滞后仍为12以保留趋势记忆。"
+  },
+  {
+    "round_id": 5,
+    "timestamp": "2025-12-27T18:54:18.819563",
+    "metrics": {
+      "total_return": 10.167796363471979,
+      "annual_return": 3.4231165440023803,
+      "sharpe_ratio": 1.151817610165031,
+      "sortino_ratio": 1.8022463619118734,
+      "max_drawdown": -2.6367150772150794,
+      "win_rate": 45.45454545454545,
+      "trades_count": 11,
+      "profit_factor": 3.7531342229694578,
+      "avg_trade": 6.452896975292144,
+      "best_trade": 23.20171017578566,
+      "worst_trade": -7.060025638931846,
+      "buy_hold_return": -23.731324338199585,
+      "final_equity": 110167.79636347198,
+      "exposure_time": 54.89655172413793
+    },
+    "params": {
+      "threshold_buy": 0.75,
+      "threshold_sell": 0.25,
+      "stop_loss": 0.05,
+      "take_profit": 0.22,
+      "position_size": 0.1,
+      "n_features": 30,
+      "lag_periods": 15,
+      "ensemble_weights": {
+        "RF": 0.25,
+        "XGB": 0.5,
+        "Bagging": 0.25
+      }
+    },
+    "improvement": -0.5125308769332291,
+    "reasoning": "从亏损交易看，多数失败多头建仓发生在强多信号后市场突变，反映当前0.75买入阈值可能偏宽松，尤其在震荡市中易产生假突破。建议提升至0.78以上确保更强趋势确认。卖出阈值可微调至0.22以更早建立空头头寸。现有止盈0.22合理，但止损0.03过紧，尤其对中长期持仓不利——例如最佳盈利交易持仓达146天，期间波动必然较大，应放宽至0.05以避免被短期噪音震出。仓位由12%降至10%可增加策略弹性。特征方面，增加至30维并延长滞后期至15，有助于捕捉更完整的周期行为。模型权重上，XGBoost表现最优（高权重已有体现），可进一步提升其至0.5；Bagging稳定性好，保留0.25；RF略降为0.25。"
+  },
+  {
+    "round_id": 6,
+    "timestamp": "2025-12-27T18:55:11.884490",
+    "metrics": {
+      "total_return": 9.298602421958917,
+      "annual_return": 3.13875991708914,
+      "sharpe_ratio": 1.2748923133588255,
+      "sortino_ratio": 2.087488104087844,
+      "max_drawdown": -1.672143682462035,
+      "win_rate": 55.55555555555556,
+      "trades_count": 9,
+      "profit_factor": 4.939319780410779,
+      "avg_trade": 9.111733236046549,
+      "best_trade": 26.54134554981725,
+      "worst_trade": -7.414352253698303,
+      "buy_hold_return": -23.731324338199585,
+      "final_equity": 109298.60242195892,
+      "exposure_time": 62.89655172413793
+    },
+    "params": {
+      "threshold_buy": 0.75,
+      "threshold_sell": 0.25,
+      "stop_loss": 0.08,
+      "take_profit": 0.3,
+      "position_size": 0.15,
+      "n_features": 45,
+      "prediction_window": 7,
+      "lag_periods": 15,
+      "model_weights": {
+        "RF": 0.25,
+        "XGB": 0.5,
+        "Bagging": 0.25
+      },
+      "RF_n_estimators": 200,
+      "RF_max_depth": 10,
+      "XGB_n_estimators": 200,
+      "XGB_max_depth": 8,
+      "XGB_learning_rate": 0.05
+    },
+    "improvement": -0.38945617373943464,
+    "reasoning": "从亏损交易看，多数失败源于信号强度不足时建仓，如第一大亏损交易入场信号仅0.6493，低于当前0.75阈值，说明可能存在阈值判定松动或数据泄露问题。建议将买入阈值提高至0.80以上，确保只在强看涨信号下入场。卖出阈值可相应下调至0.20，增强空头信号灵敏度。当前止损0.05（5%）对于波动较大的WTI原油期货偏紧，尤其在地缘政治频发环境下易被击穿，建议扩大至0.08。止盈0.22限制了盈利空间，而最佳交易盈利达26.54%，说明市场存在更大机会，应提升至0.30。仓位比例0.1保守，结合低回撤可适度增至0.15以提升资本效率。特征方面，30个特征可能不足以覆盖原油复杂驱动因素（库存、美元指数、地缘等），建议增至45，并延长预测窗口至7期，滞后阶数维持15保持平稳性。XGBoost在非线性关系建模更强，且其在盈利交易中表现更优，应将其权重由0.43提升至0.50。"
+  },
+  {
+    "round_id": 7,
+    "timestamp": "2025-12-27T18:55:52.540775",
+    "metrics": {
+      "total_return": 3.373472835777284,
+      "annual_return": 1.1599035802255075,
+      "sharpe_ratio": 0.29865240130458953,
+      "sortino_ratio": 0.44332171661236786,
+      "max_drawdown": -4.729420412665208,
+      "win_rate": 33.33333333333333,
+      "trades_count": 3,
+      "profit_factor": 1.5332657333708868,
+      "avg_trade": 1.9015213370888961,
+      "best_trade": 30.113584488048375,
+      "worst_trade": -9.898537696119641,
+      "buy_hold_return": -23.731324338199585,
+      "final_equity": 103373.47283577728,
+      "exposure_time": 74.34482758620689
+    },
+    "params": {
+      "threshold_buy": 0.75,
+      "threshold_sell": 0.25,
+      "stop_loss": 0.05,
+      "take_profit": 0.2,
+      "position_size": 0.2,
+      "n_features": 45,
+      "prediction_window": 10,
+      "lag_periods": 10,
+      "model_weights": {
+        "RF": 0.25,
+        "XGB": 0.5,
+        "Bagging": 0.25
+      }
+    },
+    "improvement": -1.3656960857936706,
+    "reasoning": "当前策略的核心问题是信号敏感度过高而过滤不足，导致在边界信号下开仓（如0.2847仍触发做空），且缺乏对趋势持续性的判断。将买入/卖出阈值提高可确保更强信号才触发交易，减少噪音交易。止损从8%收紧至5%可限制单笔亏损幅度，防止长期亏损累积；止盈从30%下调至20%有助于更早锁定利润，提升周转率。仓位比例从15%适度提升至20%，配合更高频率交易，可增强资金利用效率。特征数量维持45但建议引入波动率自适应窗口，预测窗口从5延长至10以捕捉中期趋势，滞后阶数从15降至10避免过度依赖远期信息。集成模型权重向XGBoost倾斜（从0.43→0.50），因其在非线性拟合和梯度优化上更具优势。"
+  },
+  {
+    "round_id": 8,
+    "timestamp": "2025-12-27T18:56:13.094751",
+    "metrics": {
+      "total_return": 7.863730028026591,
+      "annual_return": 2.666095955280534,
+      "sharpe_ratio": 0.506275783134909,
+      "sortino_ratio": 0.8052866249766224,
+      "max_drawdown": -5.7026378302064025,
+      "win_rate": 40.0,
+      "trades_count": 10,
+      "profit_factor": 1.9105840621918635,
+      "avg_trade": 3.090506635869117,
+      "best_trade": 23.804082376013564,
+      "worst_trade": -11.090210446622981,
+      "buy_hold_return": -23.731324338199585,
+      "final_equity": 107863.73002802659,
+      "exposure_time": 72.0
+    },
+    "params": {
+      "threshold_buy": 0.75,
+      "threshold_sell": 0.25,
+      "stop_loss": 0.05,
+      "take_profit": 0.2,
+      "position_size": 0.2,
+      "n_features": 45,
+      "prediction_window": 10,
+      "lag_periods": 10,
+      "model_weights": {
+        "RF": 0.25,
+        "XGB": 0.5,
+        "Bagging": 0.25
+      }
+    },
+    "improvement": -1.1580727039633512,
+    "reasoning": "停止: 连续 3 轮无显著改进"
+  }
+]

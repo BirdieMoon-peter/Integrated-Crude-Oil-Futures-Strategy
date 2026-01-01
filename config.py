@@ -192,6 +192,10 @@ def apply_best_params():
     
     # 特征选择
     FEATURE_CONFIG['n_features'] = params.get('n_features', FEATURE_CONFIG['n_features'])
+    FEATURE_CONFIG['prediction_horizon'] = params.get('prediction_horizon', FEATURE_CONFIG['prediction_horizon'])
+    FEATURE_CONFIG['lag_periods'] = params.get('lag_periods', FEATURE_CONFIG['lag_periods'])
+    FEATURE_CONFIG['momentum_windows'] = params.get('momentum_windows', FEATURE_CONFIG['momentum_windows'])
+    FEATURE_CONFIG['volatility_windows'] = params.get('volatility_windows', FEATURE_CONFIG['volatility_windows'])
     
     # 模型参数
     MODEL_CONFIG['rf'] = MODEL_CONFIG['rf'].copy()
@@ -199,6 +203,9 @@ def apply_best_params():
         'n_estimators': params.get('rf_n_estimators', MODEL_CONFIG['rf']['n_estimators']),
         'max_depth': params.get('rf_max_depth', MODEL_CONFIG['rf']['max_depth']),
         'min_samples_leaf': params.get('rf_min_samples_leaf', MODEL_CONFIG['rf']['min_samples_leaf']),
+        'min_samples_split': params.get('rf_min_samples_split', MODEL_CONFIG['rf'].get('min_samples_split', 2)),
+        'max_features': params.get('rf_max_features', MODEL_CONFIG['rf'].get('max_features', 'sqrt')),
+        'bootstrap': params.get('rf_bootstrap', MODEL_CONFIG['rf'].get('bootstrap', True)),
     })
     
     MODEL_CONFIG['xgb'] = MODEL_CONFIG['xgb'].copy()
@@ -210,11 +217,16 @@ def apply_best_params():
         'colsample_bytree': params.get('xgb_colsample', MODEL_CONFIG['xgb']['colsample_bytree']),
         'reg_lambda': params.get('xgb_reg_lambda', MODEL_CONFIG['xgb']['reg_lambda']),
         'reg_alpha': params.get('xgb_reg_alpha', MODEL_CONFIG['xgb']['reg_alpha']),
+        'min_child_weight': params.get('xgb_min_child_weight', MODEL_CONFIG['xgb'].get('min_child_weight', 1.0)),
+        'gamma': params.get('xgb_gamma', MODEL_CONFIG['xgb'].get('gamma', 0.0)),
     })
     
     MODEL_CONFIG['bagging'] = MODEL_CONFIG['bagging'].copy()
     MODEL_CONFIG['bagging'].update({
         'n_estimators': params.get('bag_n_estimators', MODEL_CONFIG['bagging']['n_estimators']),
+        'max_samples': params.get('bag_max_samples', MODEL_CONFIG['bagging'].get('max_samples', 1.0)),
+        'max_features': params.get('bag_max_features', MODEL_CONFIG['bagging'].get('max_features', 1.0)),
+        'bootstrap': params.get('bag_bootstrap', MODEL_CONFIG['bagging'].get('bootstrap', True)),
     })
     
     if 'weights' in params:
@@ -230,6 +242,51 @@ def apply_best_params():
     })
     
     logger.info(f"已加载最佳参数并覆盖默认配置，来源: {BEST_PARAMS_PATH}")
+
+
+def export_current_config(output_path: str = 'output/current_config.json'):
+    """
+    导出当前配置到 JSON 文件，供 Agent 优化器读取
+    
+    Args:
+        output_path: 输出文件路径
+    """
+    current_config = {
+        'feature_config': {
+            'n_features': FEATURE_CONFIG['n_features'],
+            'prediction_horizon': FEATURE_CONFIG['prediction_horizon'],
+            'lag_periods': FEATURE_CONFIG['lag_periods'],
+            'momentum_windows': FEATURE_CONFIG['momentum_windows'],
+            'volatility_windows': FEATURE_CONFIG['volatility_windows'],
+            'sma_periods': FEATURE_CONFIG['sma_periods'],
+            'ema_periods': FEATURE_CONFIG['ema_periods'],
+            'rsi_period': FEATURE_CONFIG['rsi_period'],
+        },
+        'model_config': {
+            'rf': MODEL_CONFIG['rf'].copy(),
+            'xgb': MODEL_CONFIG['xgb'].copy(),
+            'bagging': MODEL_CONFIG['bagging'].copy(),
+            'ensemble_weights': MODEL_CONFIG['ensemble_weights'].copy(),
+            'train_size': MODEL_CONFIG['train_size'],
+        },
+        'strategy_config': {
+            'threshold_buy': STRATEGY_CONFIG['threshold_buy'],
+            'threshold_sell': STRATEGY_CONFIG['threshold_sell'],
+            'position_size': STRATEGY_CONFIG['position_size'],
+            'stop_loss': STRATEGY_CONFIG['stop_loss'],
+            'take_profit': STRATEGY_CONFIG['take_profit'],
+            'long_only': STRATEGY_CONFIG['long_only'],
+            'initial_capital': STRATEGY_CONFIG['initial_capital'],
+            'commission': STRATEGY_CONFIG['commission'],
+        }
+    }
+    
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(current_config, f, indent=2, ensure_ascii=False)
+    logger.info(f"当前配置已导出到 {output_path}")
+    
+    return current_config
 
 
 # 在模块导入时应用（若文件存在）

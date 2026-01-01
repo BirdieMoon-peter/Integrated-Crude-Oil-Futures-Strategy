@@ -17,6 +17,8 @@
 ├── predictor.py                   # 推理接口（模拟盘用）
 ├── paper_account.py               # 模拟账户模块
 ├── app.py                         # Streamlit交互式演示程序
+├── agent_optimizer.py             # 🤖 LLM策略优化器（Agentic Workflow）
+├── auto_loop.py                   # 🔄 自动优化循环控制器
 ├── requirements.txt               # 依赖包列表
 ├── README.md                      # 本文件
 │
@@ -35,6 +37,10 @@
 │
 └── output/                        # 输出结果目录
     ├── best_params.json          # 调参最优结果
+    ├── metrics.json              # 🆕 回测性能指标（供Agent读取）
+    ├── current_config.json       # 🆕 当前配置快照（供Agent读取）
+    ├── optimization_log.csv      # 🆕 优化历史记录
+    ├── optimization_history.json # 🆕 优化历史详情
     ├── model_comparison.png       # 模型对比
     ├── feature_importance.png     # 特征重要性
     ├── backtest_summary.png       # 回测摘要
@@ -43,7 +49,7 @@
     ├── prediction_analysis.png    # 预测分析
     ├── price_signals.png          # 价格信号图
     ├── trade_timeline.png         # 交易时间线与累计盈亏
-    └── trades.json                # 交易记录明细
+    └── trades.json                # 交易记录明细（含盈亏标记）
 ```
 
 ## 运行环境
@@ -51,6 +57,7 @@
 - Python 3.9 或更高版本（推荐创建虚拟环境）
 - 安装依赖：`pip install -r requirements.txt`
 - 核心库：scikit-learn、xgboost、backtesting、optuna、yfinance、matplotlib、pandas、streamlit、plotly
+- **LLM Agent 依赖**（可选）：openai、anthropic
 
 ## 快速开始
 
@@ -76,6 +83,129 @@ streamlit run app.py
 1. 如果没有训练过模型，程序会提示训练
 2. 点击"初始化/重置模拟"开始演示
 3. 使用"下一天"/"前进5天"等按钮逐步推进模拟
+
+---
+
+## 🤖 LLM 策略动态优化器 (Agentic Workflow)
+
+### 功能概述
+
+这是一个基于大语言模型的自动策略优化系统，通过分析回测结果自动建议参数调整：
+
+1. **Agent 优化器** (`agent_optimizer.py`)：读取回测结果，调用 LLM 分析并生成优化建议
+2. **自动循环** (`auto_loop.py`)：串联整个流程，实现自动化迭代优化
+3. **错误恢复**：自动备份参数，出错时可回滚到历史最佳状态
+
+### 环境配置
+
+```bash
+# 安装 LLM 依赖
+pip install openai anthropic
+
+# 设置 API Key（三选一）
+
+# 方式一：使用 Qwen 通义千问（推荐，默认）
+export DASHSCOPE_API_KEY='your-dashscope-api-key'
+# 获取地址: https://dashscope.console.aliyun.com/apiKey
+# 可选模型: qwen-turbo, qwen-plus, qwen-max
+export QWEN_MODEL='qwen-plus'
+
+# 方式二：使用 OpenAI
+export OPENAI_API_KEY='your-openai-api-key'
+export LLM_PROVIDER='openai'
+
+# 方式三：使用 Anthropic
+export ANTHROPIC_API_KEY='your-anthropic-api-key'
+export LLM_PROVIDER='anthropic'
+
+# 可选：配置自定义 API 地址（适用于 OpenAI 兼容接口）
+export OPENAI_BASE_URL='https://your-api-endpoint.com/v1'
+export OPENAI_MODEL='gpt-4o'
+```
+
+### 使用方式
+
+#### 1. 单次优化建议
+```bash
+# 使用 Qwen 通义千问（默认）
+python agent_optimizer.py --save
+
+# 使用 OpenAI
+python agent_optimizer.py --provider openai --save
+
+# 使用 Anthropic
+python agent_optimizer.py --provider anthropic --save
+
+# 自定义优化目标
+python agent_optimizer.py --goal "将最大回撤控制在 8% 以内" --save
+```
+
+#### 2. 自动化优化循环
+```bash
+# 启动自动优化（最多 10 轮）
+python auto_loop.py
+
+# 自定义参数
+python auto_loop.py \
+    --max-rounds 15 \
+    --target-sharpe 2.5 \
+    --no-improvement-limit 3 \
+    --goal "提高夏普比率至 2.0 以上，同时将最大回撤控制在 10% 以内"
+
+# 回滚到历史最佳参数
+python auto_loop.py --rollback
+```
+
+### 工作流程
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Auto Optimization Loop                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌──────────┐    ┌──────────────┐    ┌───────────────────┐    │
+│   │ main.py  │───▶│ 导出指标文件 │───▶│ agent_optimizer   │    │
+│   │ 回测运行 │    │ metrics.json │    │ LLM 分析 & 建议   │    │
+│   └──────────┘    │ trades.json  │    └─────────┬─────────┘    │
+│        ▲          │ config.json  │              │              │
+│        │          └──────────────┘              │              │
+│        │                                        ▼              │
+│        │          ┌──────────────┐    ┌───────────────────┐    │
+│        │          │ 检查停止条件 │◀───│ 保存新参数        │    │
+│        │          │ - 达到目标   │    │ best_params.json  │    │
+│        │          │ - 无改进     │    └───────────────────┘    │
+│        │          │ - 达到轮数   │              │              │
+│        │          └──────┬───────┘              │              │
+│        │                 │                      │              │
+│        └─────────────────┼──────────────────────┘              │
+│                          │                                      │
+│                    (继续/停止)                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 输出文件
+
+- `output/metrics.json` - 回测性能指标
+- `output/current_config.json` - 当前参数配置
+- `output/best_params.json` - LLM 建议的新参数
+- `output/optimization_log.csv` - 优化历史记录（CSV 格式）
+- `output/optimization_history.json` - 优化历史详情（JSON 格式）
+- `output/backups/` - 参数备份目录
+
+### 参数边界保护
+
+为防止 LLM 产生幻觉给出离谱参数，系统内置了参数边界检查：
+
+| 参数 | 最小值 | 最大值 |
+|------|--------|--------|
+| threshold_buy | 0.50 | 0.75 |
+| threshold_sell | 0.25 | 0.50 |
+| stop_loss | 0.02 | 0.15 |
+| take_profit | 0.05 | 0.30 |
+| position_size | 0.1 | 0.6 |
+| n_features | 20 | 150 |
+
+---
 
 ### 无图形环境
 如在服务器环境，设置 `show_plots=False`：

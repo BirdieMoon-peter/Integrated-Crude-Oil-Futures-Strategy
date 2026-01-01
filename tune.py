@@ -28,16 +28,14 @@ import argparse
 import json
 import os
 import warnings
-from typing import Dict, Any
+from typing import Dict, Any, Optional, TYPE_CHECKING
 
 import numpy as np
-import optuna
+
+if TYPE_CHECKING:
+    import optuna  # noqa: F401
 
 from config import DATA_CONFIG, FEATURE_CONFIG, MODEL_CONFIG, STRATEGY_CONFIG
-from data_collector import DataCollector
-from feature_engineering import FeatureMatrix
-from model_trainer import ModelTrainer
-from strategy_backtest import BacktestEngine, compute_forecasts
 
 warnings.filterwarnings("ignore")
 
@@ -55,7 +53,7 @@ def scoring(stats: Dict[str, Any]) -> float:
     return score
 
 
-def suggest_params(trial: optuna.Trial) -> Dict[str, Any]:
+def suggest_params(trial: "optuna.Trial") -> Dict[str, Any]:
     """定义搜索空间"""
     params = {}
 
@@ -63,6 +61,9 @@ def suggest_params(trial: optuna.Trial) -> Dict[str, Any]:
     params["rf_n_estimators"] = trial.suggest_int("rf_n_estimators", 150, 400, step=50)
     params["rf_max_depth"] = trial.suggest_int("rf_max_depth", 6, 18, step=2)
     params["rf_min_samples_leaf"] = trial.suggest_int("rf_min_samples_leaf", 1, 5)
+    params["rf_min_samples_split"] = trial.suggest_int("rf_min_samples_split", 2, 12, step=2)
+    params["rf_max_features"] = trial.suggest_categorical("rf_max_features", ["sqrt", "log2", None])
+    params["rf_bootstrap"] = trial.suggest_categorical("rf_bootstrap", [True, False])
 
     # XGBoost
     params["xgb_n_estimators"] = trial.suggest_int("xgb_n_estimators", 200, 600, step=50)
@@ -72,9 +73,14 @@ def suggest_params(trial: optuna.Trial) -> Dict[str, Any]:
     params["xgb_colsample"] = trial.suggest_float("xgb_colsample", 0.6, 1.0, step=0.1)
     params["xgb_reg_lambda"] = trial.suggest_float("xgb_reg_lambda", 0.5, 5.0)
     params["xgb_reg_alpha"] = trial.suggest_float("xgb_reg_alpha", 0.0, 1.0)
+    params["xgb_min_child_weight"] = trial.suggest_float("xgb_min_child_weight", 1.0, 10.0)
+    params["xgb_gamma"] = trial.suggest_float("xgb_gamma", 0.0, 5.0)
 
     # Bagging(LogReg)
     params["bag_n_estimators"] = trial.suggest_int("bag_n_estimators", 30, 80, step=10)
+    params["bag_max_samples"] = trial.suggest_float("bag_max_samples", 0.5, 1.0, step=0.1)
+    params["bag_max_features"] = trial.suggest_float("bag_max_features", 0.5, 1.0, step=0.1)
+    params["bag_bootstrap"] = trial.suggest_categorical("bag_bootstrap", [True, False])
 
     # Ensemble Weights (softmax归一)
     w_rf = trial.suggest_float("w_rf", 0.2, 0.6)
@@ -90,12 +96,31 @@ def suggest_params(trial: optuna.Trial) -> Dict[str, Any]:
     # Strategy thresholds & risk
     params["threshold_buy"] = trial.suggest_float("threshold_buy", 0.52, 0.65, step=0.01)
     params["threshold_sell"] = trial.suggest_float("threshold_sell", 0.35, 0.50, step=0.01)
-    params["position_size"] = trial.suggest_float("position_size", 0.15, 0.45, step=0.05)
+
     params["stop_loss"] = trial.suggest_float("stop_loss", 0.02, 0.08, step=0.01)
     params["take_profit"] = trial.suggest_float("take_profit", 0.06, 0.20, step=0.02)
 
     # 特征选择数量
     params["n_features"] = trial.suggest_int("n_features", 30, 80, step=5)
+
+    # 特征工程参数
+    params["prediction_horizon"] = trial.suggest_int("prediction_horizon", 3, 10)
+    params["lag_periods"] = trial.suggest_int("lag_periods", 20, 120, step=10)
+    params["momentum_windows"] = trial.suggest_categorical(
+        "momentum_windows",
+        [
+            [1, 3, 5, 10, 20],
+            [1, 5, 10, 20, 60],
+            [3, 5, 10, 20, 60],
+        ],
+    )
+    params["volatility_windows"] = trial.suggest_categorical(
+        "volatility_windows",
+        [
+            [5, 10, 20],
+            [10, 20, 60],
+        ],
+    )
 
     return params
 
@@ -109,6 +134,10 @@ def apply_params(params: Dict[str, Any]):
 
     # 更新特征选择数量
     feat_cfg["n_features"] = params["n_features"]
+    feat_cfg["prediction_horizon"] = params["prediction_horizon"]
+    feat_cfg["lag_periods"] = params["lag_periods"]
+    feat_cfg["momentum_windows"] = params["momentum_windows"]
+    feat_cfg["volatility_windows"] = params["volatility_windows"]
 
     # RF
     model_cfg["rf"] = model_cfg["rf"].copy()
@@ -116,6 +145,9 @@ def apply_params(params: Dict[str, Any]):
         "n_estimators": params["rf_n_estimators"],
         "max_depth": params["rf_max_depth"],
         "min_samples_leaf": params["rf_min_samples_leaf"],
+        "min_samples_split": params["rf_min_samples_split"],
+        "max_features": params["rf_max_features"],
+        "bootstrap": params["rf_bootstrap"],
     })
 
     # XGB
@@ -128,12 +160,17 @@ def apply_params(params: Dict[str, Any]):
         "colsample_bytree": params["xgb_colsample"],
         "reg_lambda": params["xgb_reg_lambda"],
         "reg_alpha": params["xgb_reg_alpha"],
+        "min_child_weight": params["xgb_min_child_weight"],
+        "gamma": params["xgb_gamma"],
     })
 
     # Bagging
     model_cfg["bagging"] = model_cfg["bagging"].copy()
     model_cfg["bagging"].update({
         "n_estimators": params["bag_n_estimators"],
+        "max_samples": params["bag_max_samples"],
+        "max_features": params["bag_max_features"],
+        "bootstrap": params["bag_bootstrap"],
     })
 
     # Ensemble weights
@@ -143,7 +180,6 @@ def apply_params(params: Dict[str, Any]):
     strat_cfg.update({
         "threshold_buy": params["threshold_buy"],
         "threshold_sell": params["threshold_sell"],
-        "position_size": params["position_size"],
         "stop_loss": params["stop_loss"],
         "take_profit": params["take_profit"],
     })
@@ -154,7 +190,17 @@ def apply_params(params: Dict[str, Any]):
     return data_cfg, feat_cfg, model_cfg, strat_cfg
 
 
-def objective(trial: optuna.Trial) -> float:
+def objective(trial: "optuna.Trial") -> float:
+    try:
+        from data_collector import DataCollector
+        from feature_engineering import FeatureMatrix
+        from model_trainer import ModelTrainer
+        from strategy_backtest import BacktestEngine, compute_forecasts
+    except ModuleNotFoundError as e:
+        raise SystemExit(
+            f"缺少依赖 {e.name}：请先运行 `pip install -r requirements.txt` 后再执行调参"
+        )
+
     params = suggest_params(trial)
 
     data_cfg, feat_cfg, model_cfg, strat_cfg = apply_params(params)
@@ -194,6 +240,11 @@ def objective(trial: optuna.Trial) -> float:
 
 
 def main():
+    try:
+        import optuna  # type: ignore
+    except ModuleNotFoundError:
+        raise SystemExit("缺少依赖 optuna：请先运行 `pip install optuna` 或 `pip install -r requirements.txt`")
+
     parser = argparse.ArgumentParser(description="Optuna 调参")
     parser.add_argument("--trials", type=int, default=30, help="试验次数")
     parser.add_argument("--study-name", type=str, default="cl_ml_tune", help="Study 名称")
